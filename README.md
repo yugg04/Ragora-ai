@@ -21,10 +21,10 @@
 <br/>
 
 <img src="https://img.shields.io/github/license/yugg04/ragora-ai?style=for-the-badge&color=7F5AF0"/>
-<img src="https://img.shields.io/github/stars/YOUR_USERNAME/ragora-ai?style=for-the-badge&color=00C2FF"/>
-<img src="https://img.shields.io/github/forks/YOUR_USERNAME/ragora-ai?style=for-the-badge&color=2CB67D"/>
-<img src="https://img.shields.io/github/issues/YOUR_USERNAME/ragora-ai?style=for-the-badge&color=FF6B6B"/>
-<img src="https://img.shields.io/github/last-commit/YOUR_USERNAME/ragora-ai?style=for-the-badge&color=F4D35E"/>
+<img src="https://img.shields.io/github/stars/yugg04/ragora-ai?style=for-the-badge&color=00C2FF"/>
+<img src="https://img.shields.io/github/forks/yugg04/ragora-ai?style=for-the-badge&color=2CB67D"/>
+<img src="https://img.shields.io/github/issues/yugg04/ragora-ai?style=for-the-badge&color=FF6B6B"/>
+<img src="https://img.shields.io/github/last-commit/yugg04/ragora-ai?style=for-the-badge&color=F4D35E"/>
 
 <br/>
 <br/>
@@ -34,7 +34,7 @@
 <br/>
 <br/>
 
-<img src="https://komarev.com/ghpvc/?username=YOUR_USERNAME&label=Repository+Views&color=7F5AF0&style=for-the-badge"/>
+<img src="https://komarev.com/ghpvc/?username=yugg04&label=Repository+Views&color=7F5AF0&style=for-the-badge"/>
 
 </div>
 
