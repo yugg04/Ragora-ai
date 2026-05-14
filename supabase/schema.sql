@@ -91,6 +91,8 @@ create table if not exists public.chat_widgets (
   company_site text not null default '',
   company_email text not null default '',
   launcher_style text not null default 'pill' check (launcher_style in ('pill', 'circle')),
+  launcher_circle_size integer not null default 60 check (launcher_circle_size between 44 and 96),
+  launcher_pill_size integer not null default 56 check (launcher_pill_size between 44 and 80),
   border_radius integer not null default 14,
   launcher_label text not null default 'Chat with AI',
   input_placeholder text not null default 'Ask a question',

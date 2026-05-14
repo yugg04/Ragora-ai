@@ -34,6 +34,8 @@ export type WidgetConfig = {
   company_site: string;
   company_email: string;
   launcher_style: "pill" | "circle";
+  launcher_circle_size: number;
+  launcher_pill_size: number;
   border_radius: number;
   launcher_label: string;
   input_placeholder: string;

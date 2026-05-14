@@ -163,6 +163,8 @@ class WidgetConfigRequest(BaseModel):
     company_site: str = ""
     company_email: str = ""
     launcher_style: Literal["pill", "circle"] = "pill"
+    launcher_circle_size: int = Field(default=60, ge=44, le=96)
+    launcher_pill_size: int = Field(default=56, ge=44, le=80)
     border_radius: int = 14
     launcher_label: str = "Chat with AI"
     input_placeholder: str = "Ask a question"
@@ -190,6 +192,8 @@ class WidgetConfig(BaseModel):
     company_site: str = ""
     company_email: str = ""
     launcher_style: Literal["pill", "circle"]
+    launcher_circle_size: int = 60
+    launcher_pill_size: int = 56
     border_radius: int
     launcher_label: str
     input_placeholder: str

@@ -709,7 +709,14 @@ async def create_or_update_widget(
 ) -> dict:
     payload = config.model_dump()
     payload["user_id"] = user["workspace"]
-    widget = await db.upsert_widget(payload)
+    try:
+        widget = await db.upsert_widget(payload)
+    except ExternalServiceError as exc:
+        status_code = 502 if exc.status_code is None or exc.status_code >= 500 else 400
+        raise HTTPException(
+            status_code=status_code,
+            detail=f"{exc.service} failed while saving widget: {exc.detail}",
+        ) from exc
     widget["embed_script"] = _embed_script(request, widget["widget_id"])
     return widget
 
@@ -771,6 +778,8 @@ async def public_widget_config(widget_id: str, db: DatabaseService = Depends(get
         "company_site": widget.get("company_site", ""),
         "company_email": widget.get("company_email", ""),
         "launcher_style": widget["launcher_style"],
+        "launcher_circle_size": widget.get("launcher_circle_size", 60),
+        "launcher_pill_size": widget.get("launcher_pill_size", 56),
         "border_radius": widget["border_radius"],
         "launcher_label": widget["launcher_label"],
         "input_placeholder": widget["input_placeholder"],

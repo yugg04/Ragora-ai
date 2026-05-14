@@ -20,6 +20,8 @@ const DEFAULT_WIDGET = {
   company_site: "",
   company_email: "",
   launcher_style: "pill" as const,
+  launcher_circle_size: 60,
+  launcher_pill_size: 56,
   border_radius: 14,
   launcher_label: "Chat with AI",
   input_placeholder: "Ask a question",
@@ -52,6 +54,76 @@ const PRESET_LOGOS = [
 const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "image/svg+xml"];
 const MAX_LOGO_BYTES = 1_000_000;
 
+function clampNumber(value: number, min: number, max: number) {
+  if (Number.isNaN(value)) return min;
+  return Math.min(max, Math.max(min, value));
+}
+
+function isHexColor(value: string) {
+  return /^#[0-9a-f]{6}$/i.test(value);
+}
+
+function readableTextColor(background: string) {
+  if (!isHexColor(background)) return "#ffffff";
+  const hex = background.slice(1);
+  const r = parseInt(hex.slice(0, 2), 16) / 255;
+  const g = parseInt(hex.slice(2, 4), 16) / 255;
+  const b = parseInt(hex.slice(4, 6), 16) / 255;
+  const transform = (channel: number) => (channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+  const luminance = 0.2126 * transform(r) + 0.7152 * transform(g) + 0.0722 * transform(b);
+  return luminance > 0.52 ? "#061014" : "#ffffff";
+}
+
+function ColorControl({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const color = isHexColor(value) ? value : "#6366f1";
+  return (
+    <label className="flex min-h-[42px] items-center gap-2 rounded-lg border border-white/10 bg-slate-950/35 px-2">
+      <input
+        type="color"
+        value={color}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={label}
+        style={{ width: 30, height: 30, padding: 2, borderRadius: 8, border: "1px solid var(--border-default)", background: "var(--surface-0)", cursor: "pointer" }}
+      />
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold text-slate-400">{label}</p>
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value.startsWith("#") ? e.target.value : `#${e.target.value}`)}
+          onBlur={(e) => {
+            if (!isHexColor(e.target.value)) onChange(color);
+          }}
+          className="w-24 bg-transparent font-mono text-xs text-slate-100 outline-none"
+          spellCheck={false}
+        />
+      </div>
+    </label>
+  );
+}
+
+function LogoMark({ form, className }: { form: WidgetForm; className?: string }) {
+  const [failedUrl, setFailedUrl] = useState("");
+  const logoUrl = form.logo_url.trim();
+  const showImage = logoUrl && failedUrl !== logoUrl;
+  return showImage ? (
+    <img src={logoUrl} alt="" className={className ?? "h-full w-full object-cover"} onError={() => setFailedUrl(logoUrl)} />
+  ) : (
+    <>{form.icon_label || "AI"}</>
+  );
+}
+
+function svgDataUrl(svg: string) {
+  return `data:image/svg+xml;base64,${window.btoa(svg)}`;
+}
+
 function Section({ icon: Icon, title, description, children }: { icon: typeof Bot; title: string; description?: string; children: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
@@ -71,6 +143,11 @@ function Section({ icon: Icon, title, description, children }: { icon: typeof Bo
 
 function WidgetPreview({ form }: { form: WidgetForm }) {
   const isDark = form.theme === "dark";
+  const accentText = readableTextColor(form.accent_color);
+  const headerText = readableTextColor(form.secondary_color);
+  const circleSize = clampNumber(form.launcher_circle_size ?? DEFAULT_WIDGET.launcher_circle_size, 44, 96);
+  const pillSize = clampNumber(form.launcher_pill_size ?? DEFAULT_WIDGET.launcher_pill_size, 44, 80);
+  const activeLauncherSize = form.launcher_style === "circle" ? circleSize : pillSize;
   return (
     <div className="sticky top-5 overflow-hidden rounded-xl border border-white/10 bg-white/[0.045] p-4 shadow-[0_28px_90px_rgba(0,0,0,0.28)]">
       <div className="mb-4 flex items-center justify-between">
@@ -95,20 +172,20 @@ function WidgetPreview({ form }: { form: WidgetForm }) {
               borderRadius: form.border_radius,
             }}
           >
-            <div className="flex items-center gap-3 px-4 py-3" style={{ background: form.secondary_color }}>
-              <div className="grid h-8 w-8 place-items-center overflow-hidden rounded-lg text-xs font-bold text-white" style={{ background: form.accent_color }}>
-                {form.logo_url ? <img src={form.logo_url} alt="" className="h-full w-full object-cover" /> : form.icon_label}
+            <div className="flex items-center gap-3 px-4 py-3" style={{ background: form.secondary_color, color: headerText }}>
+              <div className="grid h-8 w-8 place-items-center overflow-hidden rounded-full text-xs font-bold" style={{ background: form.accent_color, color: accentText }}>
+                <LogoMark form={form} />
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-white">{form.title || "Ask AI"}</p>
-                <p className="text-[11px] text-white/55">{form.company_name || "Answers from your knowledge base"}</p>
+                <p className="truncate text-sm font-semibold">{form.title || "Ask AI"}</p>
+                <p className="text-[11px] opacity-65">{form.company_name || "Answers from your knowledge base"}</p>
               </div>
             </div>
             <div className="space-y-3 p-4">
               <div className="max-w-[88%] rounded-lg bg-white/[0.08] px-3 py-2 text-xs leading-5">
                 {form.welcome_message || "Hi. Ask me anything from these documents."}
               </div>
-              <div className="ml-auto max-w-[78%] rounded-lg px-3 py-2 text-xs leading-5 text-white" style={{ background: form.accent_color }}>
+              <div className="ml-auto max-w-[78%] rounded-lg px-3 py-2 text-xs leading-5" style={{ background: form.accent_color, color: accentText }}>
                 Can you summarize the onboarding policy?
               </div>
               <div className="max-w-[92%] rounded-lg bg-white/[0.08] px-3 py-2 text-xs leading-5">
@@ -121,12 +198,35 @@ function WidgetPreview({ form }: { form: WidgetForm }) {
                 {form.input_placeholder || "Ask a question"}
               </div>
             </div>
+            <div className="flex items-center justify-center border-t border-white/10 px-3 pb-2.5 pt-2">
+              <div className="inline-flex min-h-7 items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.07] py-1 pl-1 pr-2.5 text-[11px] leading-none opacity-80 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_10px_28px_rgba(2,6,23,0.14)]">
+                <span className="grid h-5 w-5 place-items-center rounded-full bg-gradient-to-br from-teal-400 via-indigo-500 to-fuchsia-500 text-[11px] font-black text-white shadow-[0_6px_16px_rgba(99,102,241,0.34)]">R</span>
+                <span className="font-semibold opacity-60">Powered by</span>
+                <span className="font-black tracking-normal">Ragora.ai</span>
+              </div>
+            </div>
           </div>
           <div
-            className={`ml-auto flex h-12 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-white shadow-2xl ${form.launcher_style === "circle" ? "w-12 px-0" : ""}`}
-            style={{ background: form.accent_color }}
+            className="ml-auto flex items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold shadow-2xl"
+            style={{
+              background: form.accent_color,
+              color: accentText,
+              height: activeLauncherSize,
+              minWidth: form.launcher_style === "circle" ? activeLauncherSize : Math.max(148, pillSize * 2.7),
+              width: form.launcher_style === "circle" ? activeLauncherSize : undefined,
+              paddingInline: form.launcher_style === "circle" ? 0 : Math.max(16, Math.round(pillSize * 0.34)),
+            }}
           >
-            <MessageCircle size={16} />
+            <span
+              className="grid place-items-center overflow-hidden rounded-full"
+              style={{
+                width: Math.max(30, Math.round(activeLauncherSize * 0.62)),
+                height: Math.max(30, Math.round(activeLauncherSize * 0.62)),
+                background: "rgba(255,255,255,0.38)",
+              }}
+            >
+              {form.logo_url ? <LogoMark form={form} /> : <MessageCircle size={Math.max(16, Math.round(activeLauncherSize * 0.3))} />}
+            </span>
             {form.launcher_style === "pill" && (form.launcher_label || "Chat with AI")}
           </div>
         </div>
@@ -153,7 +253,7 @@ export function WidgetEmbed({ userId }: Props) {
     const existing = await getWidget(userId);
     if (!existing) return;
     setWidget(existing);
-    setForm({ user_id: userId, title: existing.title, welcome_message: existing.welcome_message, theme: existing.theme, accent_color: existing.accent_color, secondary_color: existing.secondary_color, logo_url: existing.logo_url, icon_label: existing.icon_label, company_name: existing.company_name || "", company_site: existing.company_site || "", company_email: existing.company_email || "", launcher_style: existing.launcher_style, border_radius: existing.border_radius, launcher_label: existing.launcher_label, input_placeholder: existing.input_placeholder, position: existing.position, bot_goal: existing.bot_goal, bot_role: existing.bot_role, tone: existing.tone, custom_instructions: existing.custom_instructions, fallback_message: existing.fallback_message, collect_leads: existing.collect_leads, is_enabled: existing.is_enabled });
+    setForm({ user_id: userId, title: existing.title, welcome_message: existing.welcome_message, theme: existing.theme, accent_color: existing.accent_color, secondary_color: existing.secondary_color, logo_url: existing.logo_url, icon_label: existing.icon_label, company_name: existing.company_name || "", company_site: existing.company_site || "", company_email: existing.company_email || "", launcher_style: existing.launcher_style, launcher_circle_size: existing.launcher_circle_size ?? DEFAULT_WIDGET.launcher_circle_size, launcher_pill_size: existing.launcher_pill_size ?? DEFAULT_WIDGET.launcher_pill_size, border_radius: existing.border_radius, launcher_label: existing.launcher_label, input_placeholder: existing.input_placeholder, position: existing.position, bot_goal: existing.bot_goal, bot_role: existing.bot_role, tone: existing.tone, custom_instructions: existing.custom_instructions, fallback_message: existing.fallback_message, collect_leads: existing.collect_leads, is_enabled: existing.is_enabled });
   }
 
   async function handleSave() {
@@ -164,7 +264,16 @@ export function WidgetEmbed({ userId }: Props) {
         form.company_email && !form.fallback_message.includes(form.company_email)
           ? `I do not know based on the provided documents. Please contact ${form.company_email} for help.`
           : form.fallback_message;
-      const saved = await saveWidget({ ...form, fallback_message: fallback });
+      const saved = await saveWidget({
+        ...form,
+        logo_url: form.logo_url.trim(),
+        accent_color: isHexColor(form.accent_color) ? form.accent_color : DEFAULT_WIDGET.accent_color,
+        secondary_color: isHexColor(form.secondary_color) ? form.secondary_color : DEFAULT_WIDGET.secondary_color,
+        launcher_circle_size: clampNumber(Number(form.launcher_circle_size), 44, 96),
+        launcher_pill_size: clampNumber(Number(form.launcher_pill_size), 44, 80),
+        border_radius: clampNumber(Number(form.border_radius), 6, 28),
+        fallback_message: fallback,
+      });
       setWidget(saved);
       setForm((current) => ({ ...current, fallback_message: saved.fallback_message }));
     } catch (err) {
@@ -201,7 +310,10 @@ export function WidgetEmbed({ userId }: Props) {
       const response = await uploadWidgetLogo(file);
       setForm((c) => ({ ...c, logo_url: response.logo_url }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Logo upload failed.");
+      const message = err instanceof TypeError && err.message === "Failed to fetch"
+        ? "Logo upload could not reach the API. Check the backend URL and try again."
+        : err instanceof Error ? err.message : "Logo upload failed.";
+      setError(message);
     } finally {
       setIsLogoUploading(false);
       if (logoInputRef.current) logoInputRef.current.value = "";
@@ -222,19 +334,14 @@ export function WidgetEmbed({ userId }: Props) {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="112" height="112" viewBox="0 0 112 112"><rect width="112" height="112" rx="28" fill="${preset.bg}"/><g color="${preset.fg}">${icon}</g></svg>`;
   }
 
-  async function selectPresetLogo(preset: typeof PRESET_LOGOS[number]) {
+  function selectPresetLogo(preset: typeof PRESET_LOGOS[number]) {
     setError(null);
-    setIsLogoUploading(true);
-    try {
-      const blob = new Blob([presetSvg(preset)], { type: "image/svg+xml" });
-      const file = new File([blob], `${preset.label.toLowerCase()}-logo.svg`, { type: "image/svg+xml" });
-      const response = await uploadWidgetLogo(file);
-      setForm((c) => ({ ...c, logo_url: response.logo_url, icon_label: preset.initials, accent_color: preset.bg }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Preset logo could not be saved.");
-    } finally {
-      setIsLogoUploading(false);
-    }
+    setForm((c) => ({
+      ...c,
+      logo_url: svgDataUrl(presetSvg(preset)),
+      icon_label: preset.initials,
+      accent_color: preset.bg,
+    }));
   }
 
   return (
@@ -336,7 +443,7 @@ export function WidgetEmbed({ userId }: Props) {
                 onClick={() => logoInputRef.current?.click()}
                 aria-label="Upload widget logo"
               >
-                {form.logo_url ? <img src={form.logo_url} alt="" className="h-full w-full object-cover" /> : form.icon_label}
+                <LogoMark form={form} />
                 <span className="absolute inset-0 hidden place-items-center bg-black/55 text-white group-hover:grid">
                   {isLogoUploading ? <Loader2 size={16} className="animate-spin" /> : <UploadCloud size={16} />}
                 </span>
@@ -367,7 +474,7 @@ export function WidgetEmbed({ userId }: Props) {
               </div>
             </div>
             <div className="mt-3 grid gap-2 md:grid-cols-[1fr_140px]">
-              <input className="inp" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="Logo URL" />
+              <input className="inp" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} onBlur={(e) => setForm({ ...form, logo_url: e.target.value.trim() })} placeholder="Logo URL" />
               <input className="inp" value={form.icon_label} onChange={(e) => setForm({ ...form, icon_label: e.target.value.slice(0, 3).toUpperCase() })} placeholder="Icon letters" />
             </div>
             <div className="mt-3">
@@ -377,7 +484,7 @@ export function WidgetEmbed({ userId }: Props) {
                   <button
                     key={preset.label}
                     type="button"
-                    onClick={() => void selectPresetLogo(preset)}
+                    onClick={() => selectPresetLogo(preset)}
                     disabled={isLogoUploading}
                     className="grid h-12 place-items-center rounded-lg border border-white/10 text-xs font-bold transition hover:-translate-y-0.5 disabled:opacity-50"
                     style={{ background: preset.bg, color: preset.fg }}
@@ -399,7 +506,7 @@ export function WidgetEmbed({ userId }: Props) {
           <input className="inp" value={form.launcher_label} onChange={(e) => setForm({ ...form, launcher_label: e.target.value })} placeholder="Launcher button label" />
           <input className="inp" value={form.input_placeholder} onChange={(e) => setForm({ ...form, input_placeholder: e.target.value })} placeholder="Input placeholder text" />
           <textarea className="inp" value={form.welcome_message} onChange={(e) => setForm({ ...form, welcome_message: e.target.value })} rows={2} placeholder="Welcome message" style={{ resize: "none" }} />
-          <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto_auto]">
+          <div className="grid gap-2 md:grid-cols-2">
             <select className="inp" value={form.theme} onChange={(e) => setForm({ ...form, theme: e.target.value as "dark" | "light" })}>
               <option value="dark">Dark</option>
               <option value="light">Light</option>
@@ -408,12 +515,10 @@ export function WidgetEmbed({ userId }: Props) {
               <option value="bottom-right">Bottom Right</option>
               <option value="bottom-left">Bottom Left</option>
             </select>
-            <div style={{ position: "relative" }}>
-              <input type="color" value={form.accent_color} onChange={(e) => setForm({ ...form, accent_color: e.target.value })} aria-label="Accent color" style={{ width: 42, height: 42, padding: 4, borderRadius: 8, border: "1px solid var(--border-default)", background: "var(--surface-0)", cursor: "pointer" }} />
-            </div>
-            <div style={{ position: "relative" }}>
-              <input type="color" value={form.secondary_color} onChange={(e) => setForm({ ...form, secondary_color: e.target.value })} aria-label="Header color" style={{ width: 42, height: 42, padding: 4, borderRadius: 8, border: "1px solid var(--border-default)", background: "var(--surface-0)", cursor: "pointer" }} />
-            </div>
+          </div>
+          <div className="grid gap-2 md:grid-cols-2">
+            <ColorControl label="Accent" value={form.accent_color} onChange={(accent_color) => setForm({ ...form, accent_color })} />
+            <ColorControl label="Header" value={form.secondary_color} onChange={(secondary_color) => setForm({ ...form, secondary_color })} />
           </div>
           <div className="grid gap-2 md:grid-cols-2">
             <select className="inp" value={form.launcher_style} onChange={(e) => setForm({ ...form, launcher_style: e.target.value as "pill" | "circle" })}>
@@ -421,6 +526,36 @@ export function WidgetEmbed({ userId }: Props) {
               <option value="circle">Circle Launcher</option>
             </select>
             <input className="inp" type="number" min={6} max={28} value={form.border_radius} onChange={(e) => setForm({ ...form, border_radius: Number(e.target.value) })} placeholder="Border radius" />
+          </div>
+          <div className="grid gap-3 rounded-lg border border-white/10 bg-slate-950/35 p-3 md:grid-cols-2">
+            <label className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-300">Circle size</span>
+                <span className="font-mono text-slate-500">{form.launcher_circle_size}px</span>
+              </div>
+              <input
+                type="range"
+                min={44}
+                max={96}
+                value={form.launcher_circle_size}
+                onChange={(e) => setForm({ ...form, launcher_circle_size: Number(e.target.value) })}
+                className="w-full accent-indigo-400"
+              />
+            </label>
+            <label className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-300">Pill height</span>
+                <span className="font-mono text-slate-500">{form.launcher_pill_size}px</span>
+              </div>
+              <input
+                type="range"
+                min={44}
+                max={80}
+                value={form.launcher_pill_size}
+                onChange={(e) => setForm({ ...form, launcher_pill_size: Number(e.target.value) })}
+                className="w-full accent-indigo-400"
+              />
+            </label>
           </div>
         </Section>
 
