@@ -20,7 +20,7 @@
 <br/>
 <br/>
 
-<img src="https://img.shields.io/github/license/YOUR_USERNAME/ragora-ai?style=for-the-badge&color=7F5AF0"/>
+<img src="https://img.shields.io/github/license/yugg04/ragora-ai?style=for-the-badge&color=7F5AF0"/>
 <img src="https://img.shields.io/github/stars/YOUR_USERNAME/ragora-ai?style=for-the-badge&color=00C2FF"/>
 <img src="https://img.shields.io/github/forks/YOUR_USERNAME/ragora-ai?style=for-the-badge&color=2CB67D"/>
 <img src="https://img.shields.io/github/issues/YOUR_USERNAME/ragora-ai?style=for-the-badge&color=FF6B6B"/>
